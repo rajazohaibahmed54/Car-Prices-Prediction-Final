@@ -1,0 +1,9 @@
+Flask==2.3.3
+Werkzeug==2.3.7
+scikit-learn==1.3.2
+pandas==2.1.4
+numpy==1.26.2
+joblib==1.3.2
+reportlab==4.0.7
+pytest==7.4.3
+gunicorn==21.2.0

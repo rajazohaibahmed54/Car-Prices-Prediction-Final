@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoValuate | AI Car Price Predictor</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#14181f;
+    --panel:#1b212b;
+    --panel-raised:#212836;
+    --line:#2a323f;
+    --text:#e7ebf1;
+    --muted:#8a93a5;
+    --amber:#e0a458;
+    --amber-dim:#7a5a34;
+    --green:#5fb488;
+    --radius:10px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+
+  body{
+    background:
+      radial-gradient(circle at 50% 0%, #1c2330 0%, var(--bg) 55%);
+    color:var(--text);
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:56px 20px;
+  }
+
+  .console{
+    width:100%;
+    max-width:460px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+    overflow:hidden;
+  }
+
+  header{
+    padding:28px 32px 22px;
+    border-bottom:1px solid var(--line);
+    background:
+      linear-gradient(180deg, rgba(224,164,88,0.06), transparent);
+  }
+
+  header .mark{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  header .dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 10px 2px rgba(224,164,88,0.55);
+  }
+
+  h1{
+    font-size:1.25rem;
+    font-weight:600;
+    margin:0;
+    letter-spacing:0.01em;
+  }
+
+  header p{
+    margin:6px 0 0;
+    color:var(--muted);
+    font-size:0.88rem;
+  }
+
+  form{
+    padding:28px 32px 8px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+
+  .form-group{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+
+  .form-group label{
+    font-size:0.8rem;
+    color:var(--muted);
+    font-weight:500;
+  }
+
+  select,input{
+    background:var(--panel-raised);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:11px 13px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.92rem;
+    outline:none;
+    transition:border-color 0.15s ease, box-shadow 0.15s ease;
+    width:100%;
+  }
+
+  select{
+    font-family:'Space Grotesk', sans-serif;
+    appearance:none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position:
+      calc(100% - 20px) center,
+      calc(100% - 15px) center;
+    background-size:5px 5px, 5px 5px;
+    background-repeat:no-repeat;
+  }
+
+  select:focus, input:focus{
+    border-color:var(--amber);
+    box-shadow:0 0 0 3px rgba(224,164,88,0.15);
+  }
+
+  input::placeholder{color:#5b6373;}
+
+  .btn-predict{
+    margin-top:6px;
+    background:var(--amber);
+    color:#1a1406;
+    border:none;
+    border-radius:8px;
+    padding:13px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:0.95rem;
+    cursor:pointer;
+    transition:filter 0.15s ease, transform 0.1s ease;
+  }
+
+  .btn-predict:hover{filter:brightness(1.08);}
+  .btn-predict:active{transform:scale(0.99);}
+
+  .result-box{
+    margin:24px 32px 0;
+    padding:22px;
+    background:var(--panel-raised);
+    border:1px solid var(--line);
+    border-radius:12px;
+  }
+
+  .result-label{
+    font-size:0.75rem;
+    color:var(--muted);
+    margin:0 0 6px;
+  }
+
+  .result-price{
+    font-family:'JetBrains Mono', monospace;
+    font-size:1.9rem;
+    font-weight:700;
+    color:var(--green);
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+
+  .range-block{
+    margin-top:18px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+  }
+
+  .ci-header{
+    font-size:0.72rem;
+    color:var(--amber);
+    font-weight:600;
+    margin:0 0 8px;
+  }
+
+  .ci-track{
+    height:6px;
+    border-radius:4px;
+    background:linear-gradient(90deg, var(--amber-dim), var(--amber));
+    margin-bottom:10px;
+    position:relative;
+  }
+
+  .ci-track::after{
+    content:'';
+    position:absolute;
+    top:-4px;
+    left:50%;
+    width:2px;
+    height:14px;
+    background:var(--text);
+    opacity:0.5;
+  }
+
+  .ci-text{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.98rem;
+    margin:0;
+    color:var(--text);
+  }
+
+  .simulation-note{
+    font-size:0.72rem;
+    color:var(--muted);
+    line-height:1.5;
+    margin:10px 0 0;
+  }
+
+  .footer{
+    text-align:center;
+    padding:22px;
+    color:#5b6373;
+    font-size:0.75rem;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="console">
+    <header>
+      <div class="mark">
+        <span class="dot"></span>
+        <h1>AutoValuate</h1>
+      </div>
+      <p>Enter the vehicle's specs for an instant market valuation.</p>
+    </header>
+
+    <form action="/predict" method="POST">
+      <div class="form-group">
+        <label for="Model">Car model</label>
+        <select name="Model" id="Model" required>
+          <option value="" disabled selected>Select a car model</option>
+          <option value="Honda City">Honda City</option>
+          <option value="Honda Civic">Honda Civic</option>
+          <option value="Toyota Corolla">Toyota Corolla</option>
+          <option value="Suzuki Cultus">Suzuki Cultus</option>
+          <option value="Suzuki Alto">Suzuki Alto</option>
+          <option value="Suzuki Wagon R">Suzuki Wagon R</option>
+          <option value="Kia Sportage">Kia Sportage</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="CC">Engine capacity (CC)</label>
+        <input type="number" name="CC" id="CC" placeholder="e.g. 1300" min="600" max="6000" required>
+      </div>
+
+      <div class="form-group">
+        <label for="Engine_type">Engine type</label>
+        <select name="Engine_type" id="Engine_type" required>
+          <option value="" disabled selected>Select engine type</option>
+          <option value="Petrol">Petrol</option>
+          <option value="Diesel">Diesel</option>
+          <option value="Hybrid">Hybrid</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="Transmission">Transmission</label>
+        <select name="Transmission" id="Transmission" required>
+          <option value="" disabled selected>Select transmission</option>
+          <option value="Manual">Manual</option>
+          <option value="Automatic">Automatic</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="Km_Driven">Kilometers driven</label>
+        <input type="number" name="Km_Driven" id="Km_Driven" placeholder="e.g. 50000" required>
+      </div>
+
+      <button type="submit" class="btn-predict">Predict price</button>
+    </form>
+
+    {% if prediction_text %}
+    <div class="result-box">
+      <p class="result-label">Estimated market value</p>
+      <p class="result-price">{{ prediction_text }}</p>
+
+      {% if range_text %}
+      <div class="range-block">
+        <p class="ci-header">Probabilistic range · 95% CI</p>
+        <div class="ci-track"></div>
+        <p class="ci-text">{{ range_text }}</p>
+        <p class="simulation-note">
+          Generated from 2,000 Monte Carlo iterations, modeling Gaussian noise for vehicle condition and uniform noise for market volatility.
+        </p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="footer">
+      &copy; 2026 AutoValuate — Final Year Project
+    </div>
+  </div>
+
+</body>
+</html>
