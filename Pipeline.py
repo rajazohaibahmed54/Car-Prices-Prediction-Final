@@ -13,7 +13,7 @@ from sklearn.pipeline import Pipeline
 # ==========================================
 # CONFIGURATION
 # ==========================================
-DATASET_PATH = 'dataset/car_data.csv'
+DATASET_PATH = 'Dataset/Cleaned_Data_Final.csv'
 MODEL_PATH = 'model/car_price_model_new.pkl'
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -109,27 +109,24 @@ def run_pipeline():
     new_data = scrape_pakwheels(pages=1) 
     
     
-    if not new_data.empty:
+    if os.path.exists(DATASET_PATH):
+        old_data = pd.read_csv(DATASET_PATH)
+    else:
+        old_data = pd.DataFrame()
+
+    if new_data is not None and not new_data.empty:
         print("🔄 Merging new data with historical dataset...")
-        if os.path.exists(DATASET_PATH):
-            old_data = pd.read_csv(DATASET_PATH)
-            
-            combined_df = pd.concat([old_data, new_data], ignore_index=True)
-            
-            combined_df.to_csv(DATASET_PATH, index=False)
-            df = combined_df
-        else:
-            df = new_data
+        combined_df = pd.concat([old_data, new_data], ignore_index=True)
+        combined_df.to_csv(DATASET_PATH, index=False)
+        df = combined_df
     else:
         print("⚠️ No new data found. Training on existing dataset only.")
         df = pd.read_csv(DATASET_PATH)
 
-    
     print(f"🧹 Preprocessing {len(df)} records...")
     df['prices'] = df['prices'].apply(clean_price)
     df['CC'] = df['CC'].apply(clean_cc)
     df['Km_Driven'] = df['Km_Driven'].apply(clean_km)
-    
     df.dropna(subset=['prices', 'CC', 'Km_Driven'], inplace=True)
 
     

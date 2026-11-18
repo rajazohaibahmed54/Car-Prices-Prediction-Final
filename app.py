@@ -6,10 +6,10 @@ import numpy as np
 app = Flask(__name__)
 
 try:
-    with open('model/car_price_model.pkl', 'rb') as file:
+    with open('model/car_price_model_new.pkl', 'rb') as file:
         model = pickle.load(file)
 except FileNotFoundError:
-    print("Error: Model file not found. Make sure 'car_price_model.pkl' is in the 'model' folder.")
+    print("Error: Model file not found. Make sure 'car_price_model_new.pkl' is in the 'model' folder.")
     exit()
 
 @app.route('/')
