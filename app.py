@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import pickle
 import pandas as pd
 import numpy as np
 
 app = Flask(__name__)
+CORS(app)
 
 try:
     with open('model/car_price_model_new.pkl', 'rb') as file:
@@ -12,57 +14,48 @@ except FileNotFoundError:
     print("Error: Model file not found. Make sure 'car_price_model_new.pkl' is in the 'model' folder.")
     exit()
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-
 @app.route('/predict', methods=['POST'])
 def predict():
-    # 1. Get data from the HTML form
-    car_model = request.form['Model']
-    cc = float(request.form['CC'])    
-    engine_type = request.form['Engine_type']
-    transmission = request.form['Transmission']
-    km_driven = float(request.form['Km_Driven'])
+    try:
+        data = request.get_json()
 
-    # 2. Prepare input for the model
-    input_data = pd.DataFrame([[car_model, cc, engine_type, transmission, km_driven]],
-                              columns=['Model', 'CC', 'Engine_type', 'Transmission', 'Km_Driven'])
+        # 1. Get data sent from React
+        car_model = data['Model']
+        cc = float(data['CC'])
+        engine_type = data['Engine_type']
+        transmission = data['Transmission']
+        km_driven = float(data['Km_Driven'])
 
-    # 3. Base Prediction
-    prediction = model.predict(input_data)
-    base_price = prediction[0]
+        # 2. Prepare input for the model
+        input_data = pd.DataFrame([[car_model, cc, engine_type, transmission, km_driven]],
+                                  columns=['Model', 'CC', 'Engine_type', 'Transmission', 'Km_Driven'])
 
-    # --- MONTE CARLO & NOISE MODELING START ---
-    iterations = 2000
-    
-    # Noise Model 1: Market Volatility (Uniform Noise)
-    # Simulates +/- 10% market fluctuations (e.g., fuel price changes)
-    market_noise = np.random.uniform(0.90, 1.10, iterations)
-    
-    # Noise Model 2: Condition Uncertainty (Gaussian Noise)
-    # Simulates hidden wear/tear (Standard Deviation of 40,000 PKR)
-    condition_noise = np.random.normal(0, 40000, iterations)
-    
-    # Generate the simulated price distribution
-    predicted_prices = (base_price * market_noise) + condition_noise
+        # 3. Base Prediction
+        prediction = model.predict(input_data)
+        base_price = float(prediction[0])
 
-    # Calculate 95% Confidence Intervals
-    low_price = np.percentile(predicted_prices, 2.5)
-    high_price = np.percentile(predicted_prices, 97.5)
-    # --- MONTE CARLO & NOISE MODELING END ---
+        # --- MONTE CARLO & NOISE MODELING START ---
+        iterations = 2000
+        market_noise = np.random.uniform(0.90, 1.10, iterations)
+        condition_noise = np.random.normal(0, 40000, iterations)
+        predicted_prices = (base_price * market_noise) + condition_noise
 
-    # Formatting Results
-    price_in_lacs = round(base_price / 100000, 2)
-    low_lacs = round(low_price / 100000, 2)
-    high_lacs = round(high_price / 100000, 2)
-    
-    result_text = f"Estimated Price: PKR {base_price:,.0f} ({price_in_lacs} Lacs)"
-    range_text = f"Probabilistic Range: PKR {low_price:,.0f} - {high_price:,.0f} ({low_lacs} - {high_lacs} Lacs)"
+        low_price = float(np.percentile(predicted_prices, 2.5))
+        high_price = float(np.percentile(predicted_prices, 97.5))
+        # --- MONTE CARLO & NOISE MODELING END ---
 
-    return render_template('index.html', 
-                           prediction_text=result_text, 
-                           range_text=range_text)
+        # Formatting Results
+        price_in_lacs = round(base_price / 100000, 2)
+        low_lacs = round(low_price / 100000, 2)
+        high_lacs = round(high_price / 100000, 2)
+
+        return jsonify({
+            "prediction_text": f"Estimated Price: PKR {base_price:,.0f} ({price_in_lacs} Lacs)",
+            "range_text": f"Probabilistic Range: PKR {low_price:,.0f} - {high_price:,.0f} ({low_lacs} - {high_lacs} Lacs)"
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
