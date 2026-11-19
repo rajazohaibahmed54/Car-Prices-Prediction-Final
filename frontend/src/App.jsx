@@ -2,6 +2,12 @@ import { useState } from "react";
 import "./App.css";
 
 function App() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [token, setToken] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
+
   const [formData, setFormData] = useState({
     Model: "",
     CC: "",
@@ -13,6 +19,37 @@ function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError("");
+    setLoggingIn(true);
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setLoginError(data.error || "Login failed.");
+      } else {
+        setToken(data.token);
+      }
+    } catch (err) {
+      setLoginError("Could not connect to Flask backend. Make sure app.py is running.");
+    } finally {
+      setLoggingIn(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,6 +70,7 @@ function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           Model: formData.Model.trim(),
@@ -56,6 +94,44 @@ function App() {
       setLoading(false);
     }
   };
+
+  if (!token) {
+    return (
+      <div className="container">
+        <h2>Login</h2>
+
+        <form onSubmit={handleLogin}>
+          <div>
+            <label>Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter username"
+              required
+            />
+          </div>
+
+          <div>
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
+              required
+            />
+          </div>
+
+          <button type="submit" disabled={loggingIn}>
+            {loggingIn ? "Logging in..." : "Log In"}
+          </button>
+        </form>
+
+        {loginError && <div className="error-box">{loginError}</div>}
+      </div>
+    );
+  }
 
   return (
     <div className="container">
@@ -132,11 +208,7 @@ function App() {
         </button>
       </form>
 
-      {error && (
-        <div className="error-box">
-          {error}
-        </div>
-      )}
+      {error && <div className="error-box">{error}</div>}
 
       {result && (
         <div className="result-box">

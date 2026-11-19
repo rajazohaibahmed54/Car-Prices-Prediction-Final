@@ -1,3 +1,4 @@
+from functools import wraps
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pickle
@@ -7,6 +8,19 @@ import numpy as np
 app = Flask(__name__)
 CORS(app)
 
+SECRET_USER = "admin"
+SECRET_PASS = "1234"
+SECRET_TOKEN = "token123"
+
+def check_login(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.headers.get("Authorization", "")
+        if auth != f"Bearer {SECRET_TOKEN}":
+            return jsonify({"error": "Not logged in"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
 try:
     with open('model/car_price_model_new.pkl', 'rb') as file:
         model = pickle.load(file)
@@ -14,7 +28,15 @@ except FileNotFoundError:
     print("Error: Model file not found. Make sure 'car_price_model_new.pkl' is in the 'model' folder.")
     exit()
 
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json() or {}
+    if data.get("username") == SECRET_USER and data.get("password") == SECRET_PASS:
+        return jsonify({"token": SECRET_TOKEN})
+    return jsonify({"error": "Wrong username or password"}), 401
+
 @app.route('/predict', methods=['POST'])
+@check_login
 def predict():
     try:
         data = request.get_json()
